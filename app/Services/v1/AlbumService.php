@@ -129,7 +129,7 @@ class AlbumService extends ResourceService
             'preview' => $album->preview,
             'createdAt' => $album->created_at,
             'updatedAt' => $album->updated_at,
-            'resourceUrl' => route('albums.show', $album->id),
+            'resourceUrl' => route('v1.albums.show', $album->id),
         ];
 
         if (in_array('author', $includes)) {

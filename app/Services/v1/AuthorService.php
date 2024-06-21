@@ -137,7 +137,7 @@ class AuthorService extends ResourceService
             'cover' => $author->cover,
             'createdAt' => $author->created_at,
             'updatedAt' => $author->updated_at,
-            'resourceUrl' => route('authors.show', $author->id),
+            'resourceUrl' => route('v1.authors.show', $author->id),
         ];
 
         if (in_array('albums', $includes)) {
@@ -147,7 +147,7 @@ class AuthorService extends ResourceService
                     'title' => $album->title,
                     'description' => $album->description,
                     'preview' => $album->preview,
-                    'resourceUrl' => route('albums.show', $album->id),
+                    'resourceUrl' => route('v1.albums.show', $album->id),
                 ];
             });
         }

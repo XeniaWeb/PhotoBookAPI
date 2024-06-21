@@ -155,7 +155,7 @@ class PhotoService extends ResourceService
                 'preview' => $photo->album->preview,
                 'createdAt' => $photo->album->created_at,
                 'updatedAt' => $photo->album->updated_at,
-                'resourceUrl' => route('albums.show', $photo->album->id),
+                'resourceUrl' => route('v1.albums.show', $photo->album->id),
             ]);
         }
 
