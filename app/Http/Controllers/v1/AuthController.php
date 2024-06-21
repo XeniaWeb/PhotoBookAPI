@@ -3,78 +3,96 @@
 namespace App\Http\Controllers\v1;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Http\Response;
+use App\Http\Requests\LoginApiUserRequest;
+use App\Http\Requests\StoreUserApiRequest;
 use App\Models\User;
+use App\Traits\ApiResponses;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    use ApiResponses;
+
     /**
      * Handle an incoming registration request.
      * Registration new user for api.
      *
-     * @param Request $request
-     * @return Response
-     *
-     *  @throws ValidationException
+     * @param StoreUserApiRequest $request
+     * @return JsonResponse
      */
 
-    public function registerUserApi(Request $request): Response
+    public function registerUserApi(StoreUserApiRequest $request): JsonResponse
     {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:30',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|confirmed|min:8',
-        ]);
+        $validatedData = $request->validated();
 
         $validatedData['password'] = bcrypt($request->password);
 
         Auth::login($user = User::create($validatedData));
 
-//        $accessToken = $user->createToken('authToken')->accessToken;
+        $accessToken = $user->createToken(
+            'authToken',
+            ['*'],
+            now()->addMonth()
+        )->accessToken;
 
         event(new Registered($user));
 
-
-        return response(['user' => $user], 201);
+        return $this->success(
+            'Registered',
+            [
+                'user' => $user,
+                'access_token' => $accessToken,
+                'token_type' => 'Bearer',
+            ],
+            201
+        );
     }
 
     /**
      * Login user in api.
      *
-     * @param Request $request
-     * @return Response
+     * @param LoginApiUserRequest $request
+     * @return JsonResponse
      */
 
-    public function loginApi(Request $request): Response
+    public function loginUserApi(LoginApiUserRequest $request): JsonResponse
     {
-        $loginData = $request->validate([
-            'email' => 'email|required',
-            'password' => 'required'
-        ]);
+        $loginData = $request->validated();
 
-        if (!auth()->attempt($loginData)) {
-            return response(['message' => 'Invalid Credentials']);
+        if (!Auth::attempt($loginData)) {
+            return $this->error('Invalid Credentials', 401);
         }
+        $user = User::firstWhere('email', $request->email);
 
-        $accessToken = auth()->user()->createToken('authToken')->accessToken;
+        $accessToken = $user->createToken(
+            'authToken',
+            ['*'],
+            now()->addMonth()
+        )->plainTextToken;
 
-        return response(['user' => auth()->user(), 'access_token' => $accessToken]);
+        return $this->ok(
+            'Authenticated',
+            [
+                'access_token' => $accessToken,
+                'token_type' => 'Bearer',
+            ]
+        );
     }
 
     /**
      * Logout user from api.
      *
      * @param Request $request
+     * @return JsonResponse
      */
 
-    public function logoutApi(Request $request): void
+    public function logoutUserApi(Request $request): JsonResponse
     {
-        $request->user()->token()->revoke();
+        $request->user()->currentAccessToken()->delete();
+
+        return $this->ok('');
     }
-
-
 }
